@@ -1,4 +1,4 @@
-﻿using System.Dynamic;
+﻿using CharacterAI_Discord_Bot.Models.Request;
 
 namespace CharacterAI_Discord_Bot.Service
 {
@@ -14,27 +14,30 @@ namespace CharacterAI_Discord_Bot.Service
             Log("\nSetup complete\n", ConsoleColor.Yellow);
         }
         
-        public static dynamic BasicCallContent(Character charInfo, string msg, string imgPath)
+        public static StreamingRequestContent BasicCallContent(Character charInfo, string msg, string imgPath)
         {
-            dynamic content = new ExpandoObject();
+            var content = new StreamingRequestContent()
+            {
+                CharacterExternalId = charInfo.CharId!,
+                EnableTTI = true,
+                HistoryExternalId = charInfo.HistoryExternalId!,
+                Text = msg,
+                Tgt = charInfo.Tgt!,
+                RankingMethod = "random",
+                Staging = false,
+                StreamEveryNSteps = 16,
+                ChunksToPad = 8,
+                IsProactive = false,
+            };
 
             if (!string.IsNullOrEmpty(imgPath))
             {
-                content.image_description_type = "AUTO_IMAGE_CAPTIONING";
-                content.image_origin_type = "UPLOADED";
-                content.image_rel_path = imgPath;
+                content.ImageDescriptionType = "AUTO_IMAGE_CAPTIONING";
+                content.ImageOriginType = "UPLOADED";
+                content.ImageRelPath = imgPath;
             }
 
-            content.character_external_id = charInfo.CharId!;
-            content.enable_tti = true;
-            content.history_external_id = charInfo.HistoryExternalId!;
-            content.text = msg;
-            content.tgt = charInfo.Tgt!;
-            content.ranking_method = "random";
-            content.staging = false;
-            content.stream_every_n_steps = 16;
-            content.chunks_to_pad = 8;
-            content.is_proactive = false;
+            
 
             return content;
         }

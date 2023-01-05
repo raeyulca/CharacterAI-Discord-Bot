@@ -29,7 +29,7 @@ namespace CharacterAI_Discord_Bot.Handlers
             _commands = services.GetRequiredService<CommandService>();
             _client = services.GetRequiredService<DiscordSocketClient>();
 
-            integration = new Integration(Config.userToken);
+            integration = new Integration(Config.UserToken);
 
             lastResponse = new ExpandoObject();
             lastResponse.SetDefaults = (Action)(() =>
@@ -52,7 +52,7 @@ namespace CharacterAI_Discord_Bot.Handlers
                 return Task.CompletedTask;
 
             int argPos = 0;
-            string[] prefixes = Config.botPrefixes;
+            string[] prefixes = Config.BotPrefixes.ToArray();
             var RandomGen = new Random();
 
             bool hasMention = message.HasMentionPrefix(_client.CurrentUser, ref argPos);
@@ -203,11 +203,11 @@ namespace CharacterAI_Discord_Bot.Handlers
             }
 
             userMsgCount[currUser].count++;
-            if (userMsgCount[currUser].count == Config.rateLimit)
+            if (userMsgCount[currUser].count == Config.RateLimit)
                 await message.ReplyAsync($"⚠ Warning! If you proceed to call {_client.CurrentUser.Mention} so fast," +
                                          " your messages will be ignored.");
 
-            if (userMsgCount[currUser].count > Config.rateLimit)
+            if (userMsgCount[currUser].count > Config.RateLimit)
             {
                 blackList.Add(currUser);
                 userMsgCount.Remove(currUser);

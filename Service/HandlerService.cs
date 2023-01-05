@@ -24,7 +24,7 @@ namespace CharacterAI_Discord_Bot.Service
 
             await SetArrowButtons(botReply);
 
-            if (Config.autoRemove)
+            if (Config.AutoRemove)
                 _ = RemoveButtons(botReply, delay: 60000).ConfigureAwait(false);
 
             return botReply!.Id;

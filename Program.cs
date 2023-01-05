@@ -24,7 +24,7 @@ namespace CharacterAI_Discord_Bot
             _client.Log += Log;
             _client.Ready += OnClientReady;
 
-            await _client.LoginAsync(TokenType.Bot, Config.botToken);
+            await _client.LoginAsync(TokenType.Bot, Config.BotToken);
             await _client.StartAsync();
             await _services.GetRequiredService<CommandHandler>().InitializeAsync();
 
@@ -33,7 +33,7 @@ namespace CharacterAI_Discord_Bot
 
         public Task OnClientReady()
         {
-            if (Config.autoSetupEnabled)
+            if (Config.AutoSetupEnabled)
                 Task.Run(() => AutoSetup(_services, _client));
 
             return Task.CompletedTask;

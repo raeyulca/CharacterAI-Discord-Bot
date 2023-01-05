@@ -8,12 +8,12 @@ namespace CharacterAI_Discord_Bot.Service
 {
     public partial class CommonService
     {
-        public static readonly dynamic Config = GetConfig()!;
+        public static readonly Config Config = GetConfig()!;
         public static readonly string imgPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + "img" + Path.DirectorySeparatorChar;
         public static readonly string avatarPath = imgPath + "characterAvatar.webp";
         public static readonly string defaultAvatarPath = imgPath + "defaultAvatar.webp";
         public static readonly string tempImgPath = imgPath + "temp.webp";
-        public static readonly string nopowerPath = imgPath + Config.nopower;
+        public static readonly string nopowerPath = imgPath + Config.NoPower;
 
         public static string RemoveMention(string text)
         {
@@ -22,7 +22,7 @@ namespace CharacterAI_Discord_Bot.Service
             if (text.StartsWith("<"))
                 text = new Regex("\\<(.*?)\\>").Replace(text, "", 1);
             // Remove prefix
-            foreach (string prefix in Config.botPrefixes)
+            foreach (string prefix in Config.BotPrefixes)
                 text = text.Replace(prefix, "");
 
             return text;
@@ -76,26 +76,14 @@ namespace CharacterAI_Discord_Bot.Service
             Console.ResetColor();
         }
 
-        public static dynamic? GetConfig()
+        public static Config GetConfig()
         {
             var path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "Config.json";
             using StreamReader configJson = new StreamReader(path);
             try
             {
-                var configParsed = (JObject)JsonConvert.DeserializeObject(configJson.ReadToEnd())!;
-                return new
-                {
-                    userToken = configParsed["char_ai_user_token"]!.Value<string>(),
-                    botToken = configParsed["discord_bot_token"]!.Value<string>(),
-                    botRole = configParsed["discord_bot_role"]!.Value<string>(),
-                    botPrefixes = JsonConvert.DeserializeObject<string[]>(configParsed["discord_bot_prefixes"]!.ToString()),
-                    defaultAudienceMode = bool.Parse(configParsed["default_audience_mode"]!.Value<string>()!),
-                    nopower = configParsed["default_no_permission_file"]!.Value<string>(),
-                    rateLimit = configParsed["rate_limit"]!.Value<int>(),
-                    autoRemove = bool.Parse(configParsed["auto_buttons_remove"]!.Value<string>()!),
-                    autoSetupEnabled = bool.Parse(configParsed["auto_setup"]!.Value<string>()!),
-                    autoCharID = configParsed["auto_char_id"]!.Value<string>()
-                };
+                var configParsed = JsonConvert.DeserializeObject<Config>(configJson.ReadToEnd())!;
+                return configParsed;
             }
             catch
             {

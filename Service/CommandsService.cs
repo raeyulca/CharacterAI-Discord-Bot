@@ -13,8 +13,8 @@ namespace CharacterAI_Discord_Bot.Service
             if (Config is null) return;
 
             var integration = services.GetRequiredService<CommandHandler>().integration;
-            integration.audienceMode = Config.defaultAudienceMode;
-            if (await integration.Setup(Config.autoCharID, reset: false) is false) return;
+            integration.audienceMode = Config.DefaultAudienceMode;
+            if (await integration.Setup(Config.AutoCharId, reset: false) is false) return;
 
             var charInfo = integration.charInfo;
 
@@ -98,7 +98,7 @@ namespace CharacterAI_Discord_Bot.Service
             if (user!.Id == context.Guild.OwnerId) return true;
 
             var roles = (user as IGuildUser).Guild.Roles;
-            var requiredRole = roles.FirstOrDefault(role => role.Name == Config.botRole);
+            var requiredRole = roles.FirstOrDefault(role => role.Name == Config.BotRole);
 
             return user.Roles.Contains(requiredRole);
         }

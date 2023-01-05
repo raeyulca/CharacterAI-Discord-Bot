@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using CharacterAI_Discord_Bot.Service;
 using CharacterAI_Discord_Bot.Models;
-using System.Dynamic;
+using System.Linq;
 
 namespace CharacterAI_Discord_Bot.Handlers
 {
@@ -19,7 +19,7 @@ namespace CharacterAI_Discord_Bot.Handlers
         public Dictionary<ulong, UserMessageCount> UserMessageCounts = new();
         public ulong lastCharacterCallMsgId = 0;
         public readonly Integration integration;
-        public readonly dynamic lastResponse;
+        public ChatReply lastResponse;
         private readonly DiscordSocketClient _client;
         private readonly IServiceProvider _services;
         private readonly CommandService _commands;
@@ -32,15 +32,7 @@ namespace CharacterAI_Discord_Bot.Handlers
 
             integration = new Integration(Config.UserToken);
 
-            lastResponse = new ExpandoObject();
-            lastResponse.SetDefaults = (Action)(() =>
-            {
-                lastResponse.replies = (dynamic?)null;
-                lastResponse.currReply = 0;
-                lastResponse.primaryMsgId = 0;
-                lastResponse.lastUserMsgId = 0;
-            });
-            lastResponse.SetDefaults();
+            lastResponse = new ChatReply();
 
             _client.MessageReceived += HandleMessage;
             _client.ReactionAdded += HandleReaction;
@@ -89,7 +81,7 @@ namespace CharacterAI_Discord_Bot.Handlers
         {
             try
             {
-                if (lastResponse.replies is null || rawMessage.Id != lastCharacterCallMsgId)
+                if (lastResponse.Replies is null || rawMessage.Id != lastCharacterCallMsgId)
                     return Task.CompletedTask;
 
                 var message = rawMessage.DownloadAsync().Result;
@@ -99,12 +91,12 @@ namespace CharacterAI_Discord_Bot.Handlers
 
                 if (reaction.Emote.Name == new Emoji("\u27A1").Name)
                 {   // right arrow
-                    lastResponse.currReply++;
+                    lastResponse.CurrentReply++;
                     Task.Run(() => UpdateMessageAsync(message));
                 }
-                else if (reaction.Emote.Name == new Emoji("\u2B05").Name && lastResponse.currReply > 0)
+                else if (reaction.Emote.Name == new Emoji("\u2B05").Name && lastResponse.CurrentReply > 0)
                 {   // left arrow
-                    lastResponse.currReply--;
+                    lastResponse.CurrentReply--;
                     Task.Run(() => UpdateMessageAsync(message));
                 }
             }
@@ -114,19 +106,19 @@ namespace CharacterAI_Discord_Bot.Handlers
 
         private async Task UpdateMessageAsync(IUserMessage message)
         {
-            dynamic? newReply = null;
-            try { newReply = lastResponse.replies[lastResponse.currReply]; }
-            catch
+            object newReply = null;
+            if (lastResponse.Replies.Length < lastResponse.CurrentReply)
             {
                 await message.ModifyAsync(msg => { msg.Content = $"( 🕓 Wait... )"; }).ConfigureAwait(false);
-                var response = await integration.CallCharacter("", "", parentMsgId: lastResponse.lastUserMsgId);
+                var response = await integration.CallCharacter("", "", parentMsgId: lastResponse.LastUserMsgId);
                 if (response is string) return;
 
-                lastResponse.replies.Merge(response!.replies);
-                newReply = lastResponse.replies[lastResponse.currReply];
+                lastResponse.Replies.Merge(response!.replies);
+                newReply = lastResponse.Replies[lastResponse.CurrentReply];
             }
+            
 
-            lastResponse.primaryMsgId = (int)newReply.id;
+            lastResponse.PrimaryMsgId = (int)newReply.id;
 
             if (newReply.image_rel_path == null)
                 await message.ModifyAsync(msg => { msg.Content = $"{newReply.text}"; }).ConfigureAwait(false);
@@ -165,7 +157,7 @@ namespace CharacterAI_Discord_Bot.Handlers
 
             // Send message to character
             var response = await integration.CallCharacter(text, imgPath, primaryMsgId: lastResponse.primaryMsgId);
-            lastResponse.SetDefaults();
+            lastResponse = new ChatReply();
 
             // Alert with error message if call returns string
             if (response is string @string)

@@ -1,7 +1,6 @@
 ﻿using Discord.WebSocket;
 using Discord;
 using System.Text.RegularExpressions;
-using System.Dynamic;
 using Discord.Rest;
 
 namespace CharacterAI_Discord_Bot.Service

@@ -37,7 +37,7 @@ namespace CharacterAI_Discord_Bot.Service
             return SuccessLog(new string('<', 50) + "\n");
         }
 
-        public async Task<dynamic> CallCharacter(string msg, string imgPath, int primaryMsgId = 0, int parentMsgId = 0)
+        public async Task<StreamingResponseContent> CallCharacter(string msg, string imgPath, int primaryMsgId = 0, int parentMsgId = 0)
         {
             var content = BasicCallContent(charInfo, msg, imgPath);
 
@@ -65,17 +65,20 @@ namespace CharacterAI_Discord_Bot.Service
                         $"Response: { await response.Content.ReadAsStringAsync() }\n" +
                         $"Request: { request?.Content?.ReadAsStringAsync().Result }");
 
-                return "⚠️ Failed to send message!";
+                throw new Exception("⚠️ Failed to send message!");
             }
             request.Dispose();
 
             // Getting answer
             string[] chunks = (await response.Content.ReadAsStringAsync()).Split("\n");
             string finalChunk;
-            try { finalChunk = chunks.First(c => JsonConvert.DeserializeObject<dynamic>(c)!.is_final_chunk == true); }
-            catch { return "⚠️ Message has been sent successfully, but something went wrong..."; }
+            try { 
+                finalChunk = chunks.First(c => JsonConvert.DeserializeObject<dynamic>(c)!.is_final_chunk == true); }
+            catch (Exception ex){ 
+                throw new Exception("⚠️ Message has been sent successfully, but something went wrong...", ex);
+            }
 
-            return JsonConvert.DeserializeObject<dynamic>(finalChunk)!;
+            return JsonConvert.DeserializeObject<StreamingResponseContent>(finalChunk)!;
         }
 
         private async Task<bool> GetInfo()

@@ -4,6 +4,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
 using CharacterAI_Discord_Bot.Models.Request;
+using CharacterAI_Discord_Bot.Models.Response;
 
 namespace CharacterAI_Discord_Bot.Service
 {
@@ -37,7 +38,7 @@ namespace CharacterAI_Discord_Bot.Service
             return SuccessLog(new string('<', 50) + "\n");
         }
 
-        public async Task<dynamic> CallCharacter(string msg, string imgPath, int primaryMsgId = 0, int parentMsgId = 0)
+        public async Task<StreamingResponseContent> CallCharacter(string msg, string imgPath, int primaryMsgId = 0, int parentMsgId = 0)
         {
             var requestContentModel = new StreamingRequestContent(charInfo, msg, imgPath);
 
@@ -66,24 +67,21 @@ namespace CharacterAI_Discord_Bot.Service
                         $"Response: { await response.Content.ReadAsStringAsync() }\n" +
                         $"Request: { request?.Content?.ReadAsStringAsync().Result }");
 
-                return "⚠️ Failed to send message!";
+                throw new Exception("⚠️ Failed to send message!");
             }
             request.Dispose();
 
             // Getting answer
-            var resp = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(resp);
-            string[] chunks = (resp).Split("\n");
-            string finalChunk;
-            try { 
-                finalChunk = chunks.First(c => JsonConvert.DeserializeObject<dynamic>(c)!.is_final_chunk == true); 
-                }
-            catch 
+            try 
             { 
-                return "⚠️ Message has been sent successfully, but something went wrong..."; 
+                var resp = JsonConvert.DeserializeObject<StreamingResponseContent>(await response.Content.ReadAsStringAsync());
+                return resp;
             }
-
-            return JsonConvert.DeserializeObject<dynamic>(finalChunk)!;
+            catch (Exception ex)
+            { 
+                Console.WriteLine(ex.Message);
+                throw new Exception("⚠️ Message has been sent successfully, but something went wrong..."); 
+            }
         }
 
         private async Task<bool> GetInfo()

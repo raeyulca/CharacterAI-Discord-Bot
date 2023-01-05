@@ -3,8 +3,9 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
-using System.Dynamic;
 using CharacterAI_Discord_Bot.Service;
+using CharacterAI_Discord_Bot.Models;
+using System.Dynamic;
 
 namespace CharacterAI_Discord_Bot.Handlers
 {
@@ -13,9 +14,9 @@ namespace CharacterAI_Discord_Bot.Handlers
         public int replyChance = 0;
         public int huntChance = 100;
         public int skipMessages = 0;
-        public List<ulong> blackList = new();
-        public List<ulong> huntedUsers = new();
-        public Dictionary<ulong, dynamic> userMsgCount = new();
+        public HashSet<ulong> blackList = new();
+        public HashSet<ulong> huntedUsers = new();
+        public Dictionary<ulong, UserMessageCount> UserMessageCounts = new();
         public ulong lastCharacterCallMsgId = 0;
         public readonly Integration integration;
         public readonly dynamic lastResponse;
@@ -182,35 +183,39 @@ namespace CharacterAI_Discord_Bot.Handlers
 
         private async Task<bool> UserIsBanned(SocketUserMessage message)
         {
-            ulong currUser = message.Author.Id;
+            ulong currUserId = message.Author.Id;
             var context = new SocketCommandContext(_client, message);
-            if (blackList.Contains(currUser)) return true;
-            if (currUser == context.Guild.OwnerId) return false;
+            if (blackList.Contains(currUserId)) return true;
+            if (currUserId == context.Guild.OwnerId) return false;
 
             int currMinute = message.CreatedAt.Minute + message.CreatedAt.Hour * 60;
 
-            if (!userMsgCount.ContainsKey(currUser))
+            if (!UserMessageCounts.TryGetValue(currUserId, out var userMessageCount))
             {
-                userMsgCount.Add(currUser, new ExpandoObject());
-                userMsgCount[currUser].minute = currMinute;
-                userMsgCount[currUser].count = 0;
+                userMessageCount = new UserMessageCount()
+                {
+                    Minute = currMinute,
+                    Count = 0,
+                };
+                UserMessageCounts.Add(currUserId, userMessageCount);
             }
 
-            if (userMsgCount[currUser].minute != currMinute)
+            if (userMessageCount.Minute != currMinute)
             {
-                userMsgCount[currUser].minute = currMinute;
-                userMsgCount[currUser].count = 0;
+                userMessageCount.Minute = currMinute;
+                userMessageCount.Count = 0;
             }
 
-            userMsgCount[currUser].count++;
-            if (userMsgCount[currUser].count == Config.RateLimit)
+            userMessageCount.Count++;
+
+            if (userMessageCount.Count == Config.RateLimit)
                 await message.ReplyAsync($"⚠ Warning! If you proceed to call {_client.CurrentUser.Mention} so fast," +
                                          " your messages will be ignored.");
 
-            if (userMsgCount[currUser].count > Config.RateLimit)
+            if (userMessageCount.Count > Config.RateLimit)
             {
-                blackList.Add(currUser);
-                userMsgCount.Remove(currUser);
+                blackList.Add(currUserId);
+                UserMessageCounts.Remove(currUserId);
 
                 return true;
             }

@@ -4,6 +4,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
 
+
 namespace CharacterAI_Discord_Bot.Service
 {
     public class Integration : IntegrationService

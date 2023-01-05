@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
-
+using CharacterAI_Discord_Bot.Models.Response;
 
 namespace CharacterAI_Discord_Bot.Service
 {
@@ -120,14 +120,20 @@ namespace CharacterAI_Discord_Bot.Service
                 return FailureLog("Error!\n Request failed! (https://beta.character.ai/chat/history/continue/)");
 
             var content = await response.Content.ReadAsStringAsync();
-            dynamic historyInfo;
+            HistoryResponse historyInfo;
 
-            try { historyInfo = JsonConvert.DeserializeObject<dynamic>(content)!; }
-            catch (Exception e) { return FailureLog("Something went wrong...\n" + e.ToString()); }
+            try 
+            { 
+                historyInfo = JsonConvert.DeserializeObject<HistoryResponse>(content)!; 
+            }
+            catch (Exception e) 
+            { 
+                return FailureLog("Something went wrong...\n" + e.ToString()); 
+            }
 
             // If no status field, then history external_id is provided.
-            if (historyInfo.status == null)
-                charInfo.HistoryExternalId = historyInfo.external_id;
+            if (historyInfo.Status == null)
+                charInfo.HistoryExternalId = historyInfo.ExternalId;
             // If there's status field, then response is "status: No Such History".
             else
             {

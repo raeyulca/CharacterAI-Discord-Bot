@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
+using CharacterAI_Discord_Bot.Models.Request;
 
 namespace CharacterAI_Discord_Bot.Service
 {
@@ -38,16 +39,17 @@ namespace CharacterAI_Discord_Bot.Service
 
         public async Task<dynamic> CallCharacter(string msg, string imgPath, int primaryMsgId = 0, int parentMsgId = 0)
         {
-            var dynamicContent = BasicCallContent(charInfo, msg, imgPath);
+            var requestContentModel = new StreamingRequestContent(charInfo, msg, imgPath);
 
             if (parentMsgId != 0)
-                dynamicContent.parent_msg_id = parentMsgId;
+                requestContentModel.ParentMessageId = parentMsgId;
             if (primaryMsgId != 0)
             {
-                dynamicContent.primary_msg_id = primaryMsgId;
-                dynamicContent.seen_msg_ids = new int[] { primaryMsgId };
+                requestContentModel.PrimaryMessageId = primaryMsgId;
+                requestContentModel.SeenMessageIds = new int[] { primaryMsgId };
             }
-            var requestContent = new ByteArrayContent(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(dynamicContent)));
+            
+            var requestContent = new ByteArrayContent(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(requestContentModel)));
             requestContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
             HttpRequestMessage request = new(HttpMethod.Post, "https://beta.character.ai/chat/streaming/");
@@ -69,10 +71,17 @@ namespace CharacterAI_Discord_Bot.Service
             request.Dispose();
 
             // Getting answer
-            string[] chunks = (await response.Content.ReadAsStringAsync()).Split("\n");
+            var resp = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(resp);
+            string[] chunks = (resp).Split("\n");
             string finalChunk;
-            try { finalChunk = chunks.First(c => JsonConvert.DeserializeObject<dynamic>(c)!.is_final_chunk == true); }
-            catch { return "⚠️ Message has been sent successfully, but something went wrong..."; }
+            try { 
+                finalChunk = chunks.First(c => JsonConvert.DeserializeObject<dynamic>(c)!.is_final_chunk == true); 
+                }
+            catch 
+            { 
+                return "⚠️ Message has been sent successfully, but something went wrong..."; 
+            }
 
             return JsonConvert.DeserializeObject<dynamic>(finalChunk)!;
         }
